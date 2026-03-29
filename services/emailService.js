@@ -1,29 +1,28 @@
-import nodemailer from "nodemailer";
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendEmail = async ({ subject, html }) => {
   try {
-    console.log("📧 Sending email to:", process.env.SENDER_EMAIL);
+    console.log("📧 Sending email:", process.env.RESEND_TO_EMAIL);
     
-    const info = await transporter.sendMail({
-      from: `"RKode Form" <${process.env.EMAIL}>`,
-      to: process.env.SENDER_EMAIL,
-      subject,
-      html,
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL,
+      to: process.env.RESEND_TO_EMAIL,
+      subject: subject,
+      html: html,
     });
-    
-    console.log("✅ Email sent:", info.messageId);
-    return { success: true, messageId: info.messageId };
+
+    if (error) {
+      console.error("❌ Resend error:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log("✅ Email sent successfully:", data.id);
+    return { success: true, messageId: data.id };
   } catch (err) {
     console.error("❌ Email failed:", err.message);
     return { success: false, error: err.message };
